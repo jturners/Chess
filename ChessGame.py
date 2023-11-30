@@ -1,5 +1,5 @@
 from cmu_graphics import *
-from PIL import Image
+from PIL import Image, ImageGrab
 import os, pathlib
 
 
@@ -12,8 +12,9 @@ class Pawn:
         elif self.color == "black":
             self.image = CMUImage(openImage("blackPawn.png"))
         self.pastFirstMove = False
+        self.name = "Pawn"
 
-    def isLegalMove(self, currRow, currCol, newRow, newCol, pieceFormation):
+    def isLegalMove(self, currRow, currCol, newRow, newCol, pieceFormation, lastMove):
         if self.color == "white":
             if not self.pastFirstMove:
                 if (
@@ -58,6 +59,26 @@ class Pawn:
                 and (pieceFormation[newRow][newCol].color == "white")
             ):
                 return True
+        if self.canCaptureEnPassant(
+            currRow, currCol, newRow, newCol, lastMove, pieceFormation
+        ):
+            return True
+        return False
+
+    def canCaptureEnPassant(
+        self, currRow, currCol, newRow, newCol, lastMove, pieceFormation
+    ):
+        if lastMove is None:
+            return False
+
+        if abs(lastMove["from"][0] - lastMove["to"][0]) == 2:
+            direction = -1 if self.color == "white" else 1
+            targetRow = currRow + direction
+            enemyCol = lastMove["to"][1]
+            if abs(currCol - enemyCol) == 1:
+                if newRow == targetRow:
+                    if newCol == lastMove["from"][1]:
+                        return True
         return False
 
 
@@ -69,6 +90,7 @@ class Rook:
         elif self.color == "black":
             self.image = CMUImage(openImage("blackRook.png"))
         self.pastFirstMove = False
+        self.name = "Rook"
 
     def isLegalMove(self, currRow, currCol, newRow, newCol, pieceFormation):
         if currRow != newRow and currCol != newCol:
@@ -96,6 +118,7 @@ class Knight:
             self.image = CMUImage(openImage("whiteKnight.png"))
         elif self.color == "black":
             self.image = CMUImage(openImage("blackKnight.png"))
+        self.name = "Knight"
 
     def isLegalMove(self, currRow, currCol, newRow, newCol, pieceFormation):
         if (pieceFormation[newRow][newCol] != None) and (
@@ -126,6 +149,7 @@ class Bishop:
             self.image = CMUImage(openImage("whiteBishop.png"))
         elif self.color == "black":
             self.image = CMUImage(openImage("blackBishop.png"))
+        self.name = "Bishop"
 
     def isLegalMove(self, currRow, currCol, newRow, newCol, pieceFormation):
         if (pieceFormation[newRow][newCol] != None) and (
@@ -152,6 +176,7 @@ class Queen:
             self.image = CMUImage(openImage("whiteQueen.png"))
         elif self.color == "black":
             self.image = CMUImage(openImage("blackQueen.png"))
+        self.name = "Queen"
 
     def isLegalMove(self, currRow, currCol, newRow, newCol, pieceFormation):
         if (pieceFormation[newRow][newCol] != None) and (
@@ -191,6 +216,7 @@ class King:
         elif self.color == "black":
             self.image = CMUImage(openImage("blackKing.png"))
         self.pastFirstMove = False
+        self.name = "King"
 
     def isLegalMove(self, currRow, currCol, newRow, newCol, pieceFormation):
         if (pieceFormation[newRow][newCol] != None) and (
@@ -299,6 +325,7 @@ class Board:
         self.topY = y
         self.size = size
         self.turn = "white"
+        self.inCheckmate = False
 
         self.cellFormation = getOpeningCellFormat(self.topX, self.topY, size / 8)
         self.pieceFormation = getOpeningPieceFormat()
@@ -309,6 +336,20 @@ class Board:
 
         self.whiteCaptured = []
         self.blackCaptured = []
+        self.moves = {}
+        self.moveCount = 1
+        self.squareNames = [
+            ["A8", "B8", "C8", "D8", "E8", "F8", "G8", "H8"],
+            ["A7", "B7", "C7", "D7", "E7", "F7", "G7", "H7"],
+            ["A6", "B6", "C6", "D6", "E6", "F6", "G6", "H6"],
+            ["A5", "B5", "C5", "D5", "E5", "F5", "G5", "H5"],
+            ["A4", "B4", "C4", "D4", "E4", "F4", "G4", "H4"],
+            ["A3", "B3", "C3", "D3", "E3", "F3", "G3", "H3"],
+            ["A2", "B2", "C2", "D2", "E2", "F2", "G2", "H2"],
+            ["A1", "B1", "C1", "D1", "E1", "F1", "G1", "H1"],
+        ]
+
+        self.lastMove = None
 
     def draw(self):
         border = 10
@@ -335,18 +376,6 @@ class Board:
                     fill=cell.color,
                 )
 
-        # draw pieces w words
-        # x = self.topX
-        # y = self.topY
-        # for row in range(len(self.pieceFormation)):
-        #     for col in range(len(self.pieceFormation[row])):
-        #         piece = self.pieceFormation[row][col]
-        #         if piece:
-        #             drawLabel(piece, x + lenOfCell / 2, y + lenOfCell / 2)
-        #         x += lenOfCell
-        #     y += lenOfCell
-        #     x = self.topX
-
     def drawPieces(self):
         lenOfCell = self.size / 8
         for row in range(len(self.pieceFormation)):
@@ -367,52 +396,94 @@ class Board:
 
 
 def move(app, newRow, newCol):
-    print("here")
     currRow, currCol = app.testBoard.cellSelectedCoords
     if (0 <= currRow < 8 and 0 <= currCol < 8) and (
         0 <= newRow < 8 and 0 <= newCol < 8
     ):
-        print(
-            f"Attempting to move pice from ({currRow}, {currCol}) to ({newRow}, {newCol})"
-        )
         piece = app.testBoard.pieceFormation[currRow][currCol]
-        if piece and piece.isLegalMove(
-            currRow, currCol, newRow, newCol, app.testBoard.pieceFormation
-        ):
-            print(
-                f"Move is legal. Moving piece: {piece.__class__.__name__}, Color: {piece.color}"
+        legalMove = (
+            piece.isLegalMove(
+                currRow,
+                currCol,
+                newRow,
+                newCol,
+                app.testBoard.pieceFormation,
+                app.testBoard.lastMove,
             )
+            if isinstance(piece, Pawn)
+            else piece.isLegalMove(
+                currRow, currCol, newRow, newCol, app.testBoard.pieceFormation
+            )
+        )
+        if piece and legalMove:
+            if (
+                piece.color == "white"
+                and app.testBoard.pieceFormation[newRow][newCol] != None
+            ):
+                app.testBoard.blackCaptured.append(
+                    app.testBoard.pieceFormation[newRow][newCol].name
+                )
+            elif (
+                piece.color == "black"
+                and app.testBoard.pieceFormation[newRow][newCol] != None
+            ):
+                app.testBoard.whiteCaptured.append(
+                    app.testBoard.pieceFormation[newRow][newCol].name
+                )
+            app.testBoard.moves[
+                f"{app.testBoard.moveCount}. {app.testBoard.pieceFormation[currRow][currCol].color} Move"
+            ] = f"{app.testBoard.pieceFormation[currRow][currCol].name} moved from {app.testBoard.squareNames[currRow][currCol]} to {app.testBoard.squareNames[newRow][newCol]}"
+
             app.testBoard.pieceFormation[newRow][newCol] = piece
             app.testBoard.pieceFormation[currRow][currCol] = None
-            if not isKingInCheck(app.testBoard.turn, app.testBoard.pieceFormation):
+
+            # Check for en passant
+            if isinstance(piece, Pawn):
+                canCaptureEP = piece.canCaptureEnPassant(
+                    currRow,
+                    currCol,
+                    newRow,
+                    newCol,
+                    app.testBoard.lastMove,
+                    app.testBoard.pieceFormation,
+                )
+                if canCaptureEP:
+                    if piece.color == "white":
+                        captureRow = newRow + 1
+                    else:
+                        captureRow = newRow - 1
+                    app.testBoard.pieceFormation[captureRow][newCol] = None
+                    app.testBoard.pieceFormation[newRow][newCol] = piece
+                    app.testBoard.pieceFormation[currRow][currCol] = None
+                    piece.pastFirstMove = True
+
+            if not isKingInCheck(
+                app.testBoard.turn, app.testBoard.pieceFormation, app.testBoard.lastMove
+            ):
                 app.testBoard.turn = (
                     "black" if app.testBoard.turn == "white" else "white"
                 )
-
-                if isinstance(piece, King) and currCol == 4 and newCol == 6:
-                    app.testBoard.pieceFormation[currRow][
-                        currCol + 1
-                    ] = app.testBoard.pieceFormation[currRow][currCol + 3]
-                    app.testBoard.pieceFormation[currRow][currCol + 3] = None
-                    app.testBoard.pieceFormation[currRow][currCol + 2] = piece
-                    app.testBoard.pieceFormation[currRow][currCol] = None
-                elif isinstance(piece, King) and currCol == 4 and newCol == 2:
-                    app.testBoard.pieceFormation[currRow][
-                        currCol - 1
-                    ] = app.testBoard.pieceFormation[currRow][currCol - 4]
-                    app.testBoard.pieceFormation[currRow][currCol - 4] = None
-                    app.testBoard.pieceFormation[currRow][currCol - 2] = piece
-                    app.testBoard.pieceFormation[currRow][currCol] = None
-
                 if isinstance(piece, Pawn) and not piece.pastFirstMove:
                     piece.pastFirstMove = True
-                elif isinstance(piece, Rook) and not piece.pastFirstMove:
-                    piece.pastFirstMove = True
-                elif isinstance(piece, King) and not piece.pastFirstMove:
-                    piece.pastFirstMove = True
+
+                app.testBoard.lastMove = {
+                    "piece": piece,
+                    "from": (currRow, currCol),
+                    "to": (newRow, newCol),
+                }
             else:
                 app.testBoard.pieceFormation[currRow][currCol] = piece
                 app.testBoard.pieceFormation[newRow][newCol] = None
+
+                if piece.color == "white" and app.testBoard.blackCaptured != []:
+                    app.testBoard.blackCaptured.pop()
+                elif piece.color == "black" and app.test.whiteCaptured != []:
+                    app.testBoard.whiteCaptured.pop()
+                app.testBoard.moves.pop(
+                    f"{app.testBoard.moveCount}. {app.testBoard[currRow][currCol].color} Move"
+                )
+    app.testBoard.moveCount += 1
+    print(f"Moves: {app.testBoard.moves}")
 
 
 def getPieceColor(piece):
@@ -424,19 +495,19 @@ def getPieceColor(piece):
         return None
 
 
-def isKingInCheck(kingColor, pieceFormation):
+def isKingInCheck(kingColor, pieceFormation, lastMove):
     for i in range(len(pieceFormation)):
         for j in range(len(pieceFormation[i])):
             if (type(pieceFormation[i][j]) == King) and (
                 pieceFormation[i][j].color == kingColor
             ):
                 kingPos = (i, j)
-    playerColor = "black" if kingColor == "white" else "white"
-    opponentMoves = getAllLegalMoves(playerColor, pieceFormation)
+    opponentColor = "black" if kingColor == "white" else "white"
+    opponentMoves = getAllLegalMoves(opponentColor, pieceFormation, lastMove)
     return kingPos in opponentMoves
 
 
-def getAllLegalMoves(playerColor, pieceFormation):
+def getAllLegalMoves(playerColor, pieceFormation, lastMove):
     legalMoves = []
     for i in range(len(pieceFormation)):
         for j in range(len(pieceFormation[i])):
@@ -445,27 +516,43 @@ def getAllLegalMoves(playerColor, pieceFormation):
             ):
                 for x in range(8):
                     for y in range(8):
-                        if pieceFormation[i][j].isLegalMove(i, j, x, y, pieceFormation):
+                        if isinstance(pieceFormation[i][j], Pawn):
+                            if pieceFormation[i][j].isLegalMove(
+                                i, j, x, y, pieceFormation, lastMove
+                            ):
+                                legalMoves.append((x, y))
+                        else:
+                            if pieceFormation[i][j].isLegalMove(
+                                i, j, x, y, pieceFormation
+                            ):
+                                legalMoves.append((x, y))
+    return legalMoves
+
+
+def getKingLegalMoves(kingColor, pieceFormation, lastMove):
+    legalMoves = []
+    for i in range(len(pieceFormation)):
+        for j in range(len(pieceFormation[i])):
+            piece = pieceFormation[i][j]
+            if isinstance(piece, King) and piece.color == kingColor:
+                for x in range(8):
+                    for y in range(8):
+                        if piece.isLegalMove(
+                            i, j, x, y, pieceFormation
+                        ) and not resultsInCheck(kingColor, pieceFormation, i, j, x, y):
                             legalMoves.append((x, y))
     return legalMoves
 
 
+def resultsInCheck(kingColor, pieceFormation, currRow, currCol, newRow, newCol):
+    tempBoard = [row[:] for row in pieceFormation]
+    tempBoard[newRow][newCol] = tempBoard[currRow][currCol]
+    tempBoard[currRow][currCol] = None
+    return isKingInCheck(kingColor, tempBoard, None)
+
+
 def onAppStart(app):
     app.testBoard = Board(app.width / 1.5, app.height / 4, 800)
-
-    # # loading images
-    # app.wPawn = CMUImage(openImage("whitePawn.png"))
-    # app.bPawn = CMUImage(openImage("blackPawn.png"))
-    # app.wRook = CMUImage(openImage("whiteRook.png"))
-    # app.bRook = CMUImage(openImage("blackRook.png"))
-    # app.wKnight = CMUImage(openImage("whiteKnight.png"))
-    # app.bKnight = CMUImage(openImage("blackKnight.png"))
-    # app.wBishop = CMUImage(openImage("whiteBishop.png"))
-    # app.bBishop = CMUImage(openImage("blackBishop.png"))
-    # app.wQueen = CMUImage(openImage("whiteQueen.png"))
-    # app.bQueen = CMUImage(openImage("blackQueen.png"))
-    # app.wKing = CMUImage(openImage("whiteKing.png"))
-    # app.bKing = CMUImage(openImage("blackKing.png"))
 
 
 def openImage(fileName):
@@ -473,24 +560,18 @@ def openImage(fileName):
 
 
 def onMousePress(app, mouseX, mouseY):
-    print(f"Mouse clicked at: ({mouseX}, {mouseY})")
     for row in range(len(app.testBoard.cellFormation)):
         for col in range(len(app.testBoard.cellFormation[row])):
             cell = app.testBoard.cellFormation[row][col]
             if (cell.xPos <= mouseX <= cell.xPos + cell.size) and (
                 cell.yPos <= mouseY <= cell.yPos + cell.size
             ):
-                print(f"Clicked cell: ({row}, {col})")
-
-                # If a piece is already selected
                 if app.testBoard.cellSelected:
-                    # If clicking the same cell again, unselect it
                     if app.testBoard.cellSelectedCoords == (row, col):
                         cell.color = app.testBoard.cellSelectedCol
                         app.testBoard.cellSelected = False
                         app.testBoard.cellSelectedCoords = None
                     else:
-                        # Attempt to move the selected piece to the new cell
                         prevRow, prevCol = app.testBoard.cellSelectedCoords
                         move(app, row, col)
                         app.testBoard.cellFormation[prevRow][
@@ -501,10 +582,6 @@ def onMousePress(app, mouseX, mouseY):
                 elif (app.testBoard.pieceFormation[row][col] != None) and (
                     app.testBoard.pieceFormation[row][col].color == app.testBoard.turn
                 ):
-                    # Selecting a new piece
-                    print(
-                        f"Piece at clicked cell: {app.testBoard.pieceFormation[row][col].__class__.__name__}, Color: {app.testBoard.pieceFormation[row][col].color}"
-                    )
                     app.testBoard.cellSelectedCol = cell.color
                     cell.color = "pink"
                     app.testBoard.cellSelected = True
@@ -515,12 +592,43 @@ def onKeyPress(app, key):
     if key == "r":
         app.testBoard.pieceFormation = getOpeningPieceFormat()
         app.testBoard.turn = "white"
+        app.testBoard.inCheckmate = False
+        app.testBoard.blackCaptured = []
+        app.testBoard.whiteCaptured = []
 
 
 def redrawAll(app):
     app.testBoard.draw()
     app.testBoard.drawPieces()
     drawLabel("Press 'r' to reset game", app.width / 2, app.height * 0.95, bold=True)
+    if app.testBoard.inCheckmate:
+        drawLabel("Checkmate", app.width / 2, app.height / 12, bold=True)
+
+    # Captured Pieces display
+    drawRect(0, app.height * 0.1, app.width / 7, app.height * 0.85, fill="gray")
+    drawLabel(
+        "White's Captured Pieces:",
+        app.width / 15,
+        app.height * 0.12,
+        fill="white",
+        bold=True,
+    )
+    drawLabel(
+        "Black's Captured Pieces:",
+        app.width / 15,
+        app.height * 0.53,
+        fill="black",
+        bold=True,
+    )
+
+    counter = 0.15
+    for piece in app.testBoard.whiteCaptured:
+        drawLabel(piece, app.width / 15, app.height * counter, fill="white")
+        counter += 0.02
+    counter = 0.55
+    for piece in app.testBoard.blackCaptured:
+        drawLabel(piece, app.width / 15, app.height * counter, fill="black")
+        counter += 0.02
 
 
 def main():
