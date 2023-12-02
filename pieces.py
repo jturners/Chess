@@ -235,16 +235,17 @@ class King:
             return True
         # king-side castle legality
         if (
-            (not self.pastFirstMove)
-            and (currRow == newRow)
-            and (currCol + 2 == newCol)
-            and (pieceFormation[currRow][currCol + 1] == None)
-            and (pieceFormation[currRow][currCol + 2] == None)
-            and (currCol + 3 < 8)
+            not self.pastFirstMove
+            and currRow == newRow
+            and currCol + 2 == newCol
+            and pieceFormation[currRow][currCol + 1] == None
+            and pieceFormation[currRow][currCol + 2] == None
+            and currCol + 3 < 8
             and isinstance(pieceFormation[currRow][currCol + 3], Rook)
-            and (not pieceFormation[currRow][currCol + 3].pastFirstMove)
+            and not pieceFormation[currRow][currCol + 3].pastFirstMove
         ):
             return True
+
         # queen-side castle legality
         elif (
             (not self.pastFirstMove)

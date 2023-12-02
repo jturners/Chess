@@ -52,18 +52,25 @@ def getOpeningPieceFormat():
 
 
 def isKingInCheck(kingColor, pieceFormation, lastMove):
+    print(f"Checking if {kingColor} king is in check...")
+    kingPos = None
+
+    # Find the king's position
     for i in range(len(pieceFormation)):
         for j in range(len(pieceFormation[i])):
-            if (type(pieceFormation[i][j]) == King) and (
-                pieceFormation[i][j].color == kingColor
+            if (
+                isinstance(pieceFormation[i][j], King)
+                and pieceFormation[i][j].color == kingColor
             ):
                 kingPos = (i, j)
+                break
     opponentColor = "black" if kingColor == "white" else "white"
-    opponentMoves = getAllLegalMoves(opponentColor, pieceFormation, lastMove)
-    return kingPos in opponentMoves
+    return kingPos in getAllLegalMoves(opponentColor, pieceFormation, lastMove)
 
 
 def getAllLegalMoves(playerColor, pieceFormation, lastMove):
+    print(f"Getting all legal moves for {playerColor}")
+
     legalMoves = []
     for i in range(len(pieceFormation)):
         for j in range(len(pieceFormation[i])):
@@ -82,11 +89,25 @@ def getAllLegalMoves(playerColor, pieceFormation, lastMove):
                                 i, j, x, y, pieceFormation
                             ):
                                 legalMoves.append((x, y))
+
     return legalMoves
 
 
 def resultsInCheck(kingColor, pieceFormation, currRow, currCol, newRow, newCol):
-    tempBoard = [row[:] for row in pieceFormation]
-    tempBoard[newRow][newCol] = tempBoard[currRow][currCol]
-    tempBoard[currRow][currCol] = None
-    return isKingInCheck(kingColor, tempBoard, None)
+    # Simulate the move
+    movedPiece = pieceFormation[currRow][currCol]
+    capturedPiece = pieceFormation[newRow][newCol]
+
+    pieceFormation[newRow][newCol] = movedPiece
+    pieceFormation[currRow][currCol] = None
+
+    # Check if the king is in check after the move
+    inCheck = isKingInCheck(kingColor, pieceFormation, None)
+
+    if not inCheck:
+        print(f"stupid piece is {pieceFormation[newRow][newCol]}")
+    # Undo the move
+    pieceFormation[currRow][currCol] = movedPiece
+    pieceFormation[newRow][newCol] = capturedPiece
+
+    return inCheck
