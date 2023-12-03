@@ -20,7 +20,6 @@ def onAppStart(app):
 
 
 def onMousePress(app, mouseX, mouseY):
-    print(f"Mouse at ({mouseX},{mouseY})")
     for row in range(len(app.testBoard.cellFormation)):
         for col in range(len(app.testBoard.cellFormation[row])):
             cell = app.testBoard.cellFormation[row][col]
@@ -34,9 +33,7 @@ def onMousePress(app, mouseX, mouseY):
                         app.testBoard.cellSelectedCoords = None
                     else:
                         prevRow, prevCol = app.testBoard.cellSelectedCoords
-                        print(f"before calling move at ({row}, {col})")
                         move(app, row, col)
-                        print("after calling move")
                         app.testBoard.cellFormation[prevRow][
                             prevCol
                         ].color = app.testBoard.cellSelectedCol
@@ -99,9 +96,6 @@ def move(app, newRow, newCol):
         0 <= newRow < 8 and 0 <= newCol < 8
     ):
         piece = app.testBoard.pieceFormation[currRow][currCol]
-        print(
-            f"Attempting move from ({currRow}, {currCol}) to ({newRow}, {newCol}) by {piece.color} {piece.name}"
-        )
 
         legalMove = (
             piece.isLegalMove(
@@ -117,7 +111,6 @@ def move(app, newRow, newCol):
                 currRow, currCol, newRow, newCol, app.testBoard.pieceFormation
             )
         )
-        print(f"Is move legal? {legalMove}")
 
         if piece and legalMove:
             if (
@@ -138,29 +131,13 @@ def move(app, newRow, newCol):
             app.testBoard.pieceFormation[newRow][newCol] = piece
             app.testBoard.pieceFormation[currRow][currCol] = None
 
-            print(f"Move made. Checking for check status...")
-
-            # checkmate'
+            # checkmate
 
             opponentColor = "black" if piece.color == "white" else "white"
             opponentInCheck = isKingInCheck(
                 opponentColor, app.testBoard.pieceFormation, app.testBoard.lastMove
             )
             if opponentInCheck:
-                print(f"Is opponent In Check? {opponentInCheck}")
-                for row in range(len(app.testBoard.pieceFormation)):
-                    for col in range(len(app.testBoard.pieceFormation[row])):
-                        if (
-                            type(app.testBoard.pieceFormation[row][col]) == King
-                            and app.testBoard.pieceFormation[row][col].color
-                            == opponentColor
-                        ):
-                            kingRow, kingCol = row, col
-
-                print(
-                    f"Checking checkmate for {opponentColor} king at ({kingRow}, {kingCol})"
-                )
-
                 possibleMoves = getAllLegalMoves(
                     opponentColor, app.testBoard.pieceFormation, app.testBoard.lastMove
                 )
@@ -168,7 +145,6 @@ def move(app, newRow, newCol):
                 app.testBoard.inCheckmate = True
                 for move in possibleMoves:
                     testRow, testCol = move
-                    print(f"Testing move {move} for checkmate escape...")
 
                     inCheck = resultsInCheck(
                         opponentColor,
@@ -178,12 +154,10 @@ def move(app, newRow, newCol):
                         testRow,
                         testCol,
                     )
-                    print(f"Does move {move} result in check? {inCheck}")
 
                     if not inCheck:
                         app.testBoard.inCheckmate = False
                         break
-                print(f"Is it checkmate? {app.testBoard.inCheckmate}")
 
             # Check for en passant
             if isinstance(piece, Pawn):
@@ -196,7 +170,6 @@ def move(app, newRow, newCol):
                     app.testBoard.pieceFormation,
                 )
                 if canCaptureEP:
-                    print("canCaptureEP")
                     if piece.color == "white":
                         captureRow = newRow + 1
                     else:
@@ -212,15 +185,10 @@ def move(app, newRow, newCol):
                 elif piece.color == "black" and newRow == 7:
                     app.testBoard.pieceFormation[newRow][newCol] = Queen("black")
 
-            print(
-                f"Is {app.testBoard.turn} king in check after move? {isKingInCheck(app.testBoard.turn, app.testBoard.pieceFormation, app.testBoard.lastMove)}"
-            )
-
             if not isKingInCheck(
                 app.testBoard.turn, app.testBoard.pieceFormation, app.testBoard.lastMove
             ):
                 if isinstance(piece, King) and currCol == 4 and newCol == 6:
-                    print(f"kingsidecastle")
                     app.testBoard.pieceFormation[currRow][
                         currCol + 1
                     ] = app.testBoard.pieceFormation[currRow][currCol + 3]
@@ -229,7 +197,6 @@ def move(app, newRow, newCol):
                     app.testBoard.pieceFormation[currRow][currCol] = None
 
                 elif isinstance(piece, King) and currCol == 4 and newCol == 2:
-                    print(f"queensidecastle")
                     app.testBoard.pieceFormation[currRow][
                         currCol - 1
                     ] = app.testBoard.pieceFormation[currRow][currCol - 4]
