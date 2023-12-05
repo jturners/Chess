@@ -12,6 +12,7 @@ class Pawn:
             self.image = CMUImage(openImage("blackPawn.png"))
         self.pastFirstMove = False
         self.name = "Pawn"
+        self.weight = 10
 
     def isLegalMove(self, currRow, currCol, newRow, newCol, pieceFormation, lastMove):
         if self.color == "white":
@@ -90,6 +91,7 @@ class Rook:
             self.image = CMUImage(openImage("blackRook.png"))
         self.pastFirstMove = False
         self.name = "Rook"
+        self.weight = 50
 
     def isLegalMove(self, currRow, currCol, newRow, newCol, pieceFormation):
         if currRow != newRow and currCol != newCol:
@@ -118,6 +120,7 @@ class Knight:
         elif self.color == "black":
             self.image = CMUImage(openImage("blackKnight.png"))
         self.name = "Knight"
+        self.weight = 30
 
     def isLegalMove(self, currRow, currCol, newRow, newCol, pieceFormation):
         if (pieceFormation[newRow][newCol] != None) and (
@@ -149,6 +152,7 @@ class Bishop:
         elif self.color == "black":
             self.image = CMUImage(openImage("blackBishop.png"))
         self.name = "Bishop"
+        self.weight = 30
 
     def isLegalMove(self, currRow, currCol, newRow, newCol, pieceFormation):
         if (pieceFormation[newRow][newCol] != None) and (
@@ -176,6 +180,7 @@ class Queen:
         elif self.color == "black":
             self.image = CMUImage(openImage("blackQueen.png"))
         self.name = "Queen"
+        self.weight = 90
 
     def isLegalMove(self, currRow, currCol, newRow, newCol, pieceFormation):
         if (pieceFormation[newRow][newCol] != None) and (
@@ -216,6 +221,7 @@ class King:
             self.image = CMUImage(openImage("blackKing.png"))
         self.pastFirstMove = False
         self.name = "King"
+        self.weight = 900
 
     def isLegalMove(self, currRow, currCol, newRow, newCol, pieceFormation):
         if (pieceFormation[newRow][newCol] != None) and (

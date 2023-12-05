@@ -1,4 +1,4 @@
-from board import Board
+from board import Board, copyBoard
 from cmu_graphics import *
 from utilities import (
     getOpeningPieceFormat,
@@ -8,6 +8,7 @@ from utilities import (
 )
 from graphics import displayCapturedPieces, drawMovesMade
 from pieces import Pawn, Rook, Knight, Bishop, Queen, King
+from engine import aiMove
 
 
 def onAppStart(app):
@@ -17,6 +18,8 @@ def onAppStart(app):
     app.testBoard = Board(
         app.width / boardWidthScalar, app.height / boardHeightScalar, boardSize
     )
+    app.playComputer = False
+    app.computerCalculating = False
 
 
 def onMousePress(app, mouseX, mouseY):
@@ -58,6 +61,28 @@ def onKeyPress(app, key):
         app.testBoard.whiteCaptured = []
         app.testBoard.moves = {}
         app.testBoard.moveCount = 0
+        app.playComputer = False
+    elif key == "c":
+        app.playComputer = True
+
+
+def onStep(app):
+    if (
+        app.playComputer
+        and app.testBoard.turn == "black"
+        and not app.computerCalculating
+    ):
+        app.computerCalculating = True
+    elif app.playComputer and app.testBoard.turn == "black" and app.computerCalculating:
+        aiMovePos = aiMove(copyBoard(app.testBoard), "black")
+        fromRow, fromCol, toRow, toCol = aiMovePos
+        app.testBoard.selected = True
+        app.testBoard.cellSelectedCol = app.testBoard.cellFormation[fromRow][
+            fromCol
+        ].color
+        app.testBoard.cellSelectedCoords = (fromRow, fromCol)
+        move(app, toRow, toCol)
+        app.computerCalculating = False
 
 
 def redrawAll(app):
@@ -65,7 +90,7 @@ def redrawAll(app):
     app.testBoard.drawPieces()
 
     # reset game label
-    resetGameLabelWidthScalar = 2
+    resetGameLabelWidthScalar = 4
     resetGameLabelHeightScalar = 0.95
     drawLabel(
         "Press 'r' to reset game",
@@ -74,10 +99,41 @@ def redrawAll(app):
         bold=True,
     )
 
+    # play AI? label
+    playAiLabelWidthScalar = 1.6
+    playAiLabelHeightScalar = 0.95
+    drawLabel(
+        "Press 'c' to play against computer",
+        app.width / playAiLabelWidthScalar,
+        app.height * playAiLabelHeightScalar,
+        bold=True,
+    )
+
+    # playing Ai label
+    if app.playComputer:
+        playingAiLabelWidthScalar = 1.6
+        playingAiLabelHeightScalar = 13
+        drawLabel(
+            "Playing against computer",
+            app.width / playingAiLabelWidthScalar,
+            app.height / playingAiLabelHeightScalar,
+            bold=True,
+        )
+
+    # computer Calculating label
+    if app.computerCalculating:
+        computerCalculatingLabelWidthScalar = 2.2
+        computerCalculatingLabelHeightScalar = 13
+        drawLabel(
+            "Computer Calculating Move...",
+            app.width / computerCalculatingLabelWidthScalar,
+            app.height / computerCalculatingLabelHeightScalar,
+        )
+
     # checkmate label
     if app.testBoard.inCheckmate:
-        checkmateLabelWidthScalar = 2
-        checkmateLabelHeightScalar = 12
+        checkmateLabelWidthScalar = 4
+        checkmateLabelHeightScalar = 13
         drawLabel(
             "Checkmate",
             app.width / checkmateLabelWidthScalar,
@@ -127,7 +183,7 @@ def move(app, newRow, newCol):
                 app.testBoard.whiteCaptured.append(
                     app.testBoard.pieceFormation[newRow][newCol].name
                 )
-
+            capturedPiece = app.testBoard.pieceFormation[newRow][newCol]
             app.testBoard.pieceFormation[newRow][newCol] = piece
             app.testBoard.pieceFormation[currRow][currCol] = None
 
@@ -139,7 +195,9 @@ def move(app, newRow, newCol):
             )
             if opponentInCheck:
                 possibleMoves = getAllLegalMoves(
-                    opponentColor, app.testBoard.pieceFormation, app.testBoard.lastMove
+                    opponentColor,
+                    app.testBoard.pieceFormation,
+                    app.testBoard.lastMove,
                 )
 
                 app.testBoard.inCheckmate = True
@@ -186,8 +244,16 @@ def move(app, newRow, newCol):
                     app.testBoard.pieceFormation[newRow][newCol] = Queen("black")
 
             if not isKingInCheck(
-                app.testBoard.turn, app.testBoard.pieceFormation, app.testBoard.lastMove
+                app.testBoard.turn,
+                app.testBoard.pieceFormation,
+                app.testBoard.lastMove,
             ):
+                if app.testBoard.turn == "white" and capturedPiece != None:
+                    app.testBoard.blackScore -= capturedPiece.weight
+                elif app.testBoard.turn == "black" and capturedPiece != None:
+                    app.testBoard.whiteScore -= capturedPiece.weight
+
+                # king-side castle
                 if isinstance(piece, King) and currCol == 4 and newCol == 6:
                     app.testBoard.pieceFormation[currRow][
                         currCol + 1
@@ -196,6 +262,7 @@ def move(app, newRow, newCol):
                     app.testBoard.pieceFormation[currRow][currCol + 2] = piece
                     app.testBoard.pieceFormation[currRow][currCol] = None
 
+                # queen-side castle
                 elif isinstance(piece, King) and currCol == 4 and newCol == 2:
                     app.testBoard.pieceFormation[currRow][
                         currCol - 1
@@ -219,7 +286,7 @@ def move(app, newRow, newCol):
                     "to": (newRow, newCol),
                 }
                 app.testBoard.moves[
-                    f"{app.testBoard.moveCount+1}. {piece.color} Move"
+                    f"{app.testBoard.moveCount+1}. {piece.color}"
                 ] = f"{piece.name} moved from {app.testBoard.squareNames[currRow][currCol]} to {app.testBoard.squareNames[newRow][newCol]}"
 
                 app.testBoard.moveCount += 1

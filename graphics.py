@@ -79,7 +79,7 @@ def drawMovesMade(app):
     )
 
     movesMadeLabelHeightCounter = 0.15
-    maxMovesDisplayed = 27
+    maxMovesDisplayed = 40
     moveDisplayed = 0
 
     for move in app.testBoard.moves:
@@ -102,17 +102,17 @@ def drawMovesMade(app):
             moveDisplayed = 0
 
         drawLabel(
-            move,
-            app.width * movesMadeLabelWidthScalar,
-            app.height * movesMadeLabelHeightCounter,
-            fill="white",
-        )
-        movesMadeLabelHeightCounter += 0.01
-        drawLabel(
-            app.testBoard.moves[move],
+            f"{move} {app.testBoard.moves[move]}",
             app.width * movesMadeLabelWidthScalar,
             app.height * movesMadeLabelHeightCounter,
             fill="white",
         )
         movesMadeLabelHeightCounter += 0.02
+        # drawLabel(
+        #     app.testBoard.moves[move],
+        #     app.width * movesMadeLabelWidthScalar,
+        #     app.height * movesMadeLabelHeightCounter,
+        #     fill="white",
+        # )
+        # movesMadeLabelHeightCounter += 0.02
         moveDisplayed += 1

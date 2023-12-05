@@ -1,3 +1,12 @@
-CITATIONS:
-chess pieces images sourced from:
-[1] “Category:PNG Chess Pieces/Standard Transparent,” Wikimedia Commons, https://commons.wikimedia.org/wiki/Category:PNG_chess_pieces/Standard_transparent (accessed Nov. 27, 2023).
+CITATIONS (IEEE style formatting):
+
+Chess piece images taken from public domain image bank accessed at:
+[1]“Category:PNG chess pieces/Standard transparent - Wikimedia Commons.” https://commons.wikimedia.org/wiki/Category:PNG_chess_pieces/Standard_transparent
+
+Research on Minimax and alpha-beta pruning:
+[2]“Minimax  | Brilliant Math & Science Wiki.” https://brilliant.org/wiki/minimax/
+[3]Y. C. Turk, “Mini-Max - Analytics Vidhya - Medium,” Medium, Mar. 26, 2022. https://medium.com/analytics-vidhya/mini-max-acc8d6b88cb1
+[4]NerdzLab, “Game theory — Minimax - Towards Data Science,” Medium, May 27, 2020. https://towardsdatascience.com/game-theory-minimax-f84ee6e4ae6e
+[5]D. Lazar, “Understanding the Minimax Algorithm - Towards Data Science,” Medium, Dec. 15, 2021. https://towardsdatascience.com/understanding-the-minimax-algorithm-726582e4f2c6
+[6]“Can someone help me to understand the alpha-beta pruning algorithm?,” Artificial Intelligence Stack Exchange. https://ai.stackexchange.com/questions/9808/can-someone-help-me-to-understand-the-alpha-beta-pruning-algorithm
+[7]“What happens if the opponent doesn’t play optimally in minimax?,” Artificial Intelligence Stack Exchange. https://ai.stackexchange.com/questions/20898/what-happens-if-the-opponent-doesnt-play-optimally-in-minimax

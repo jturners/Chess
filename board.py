@@ -38,6 +38,9 @@ class Board:
 
         self.lastMove = None
 
+        self.whiteScore = 1290
+        self.blackScore = 1290
+
     def draw(self):
         border = 10
 
@@ -80,3 +83,32 @@ class Board:
                         height=lenOfCell * imageReductionScalar,
                         align="center",
                     )
+
+
+def copyBoard(originalBoard):
+    boardCopy = Board(originalBoard.topX, originalBoard.topY, originalBoard.size)
+    boardCopy.turn = originalBoard.turn
+    boardCopy.moves = originalBoard.moves
+    boardCopy.inCheckmate = originalBoard.inCheckmate
+    boardCopy.cellSelected = originalBoard.cellSelected
+    boardCopy.cellSelectedCol = originalBoard.cellSelectedCol
+    boardCopy.cellSelectedCoords = originalBoard.cellSelectedCoords
+    boardCopy.whiteCaptured = originalBoard.whiteCaptured
+    boardCopy.blackCaptured = originalBoard.blackCaptured
+    boardCopy.moveCount = originalBoard.moveCount
+    boardCopy.lastMove = originalBoard.lastMove
+    boardCopy.whiteScore = originalBoard.whiteScore
+    boardCopy.blackScore = originalBoard.blackScore
+    boardCopy.pieceFormation = []
+    for row in originalBoard.pieceFormation:
+        newRow = []
+        for piece in row:
+            if piece == None:
+                newRow.append(None)
+            else:
+                pieceType = type(piece)
+                newPiece = pieceType(piece.color)
+                newRow.append(newPiece)
+        boardCopy.pieceFormation.append(newRow)
+
+    return boardCopy
