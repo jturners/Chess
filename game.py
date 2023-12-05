@@ -6,7 +6,12 @@ from utilities import (
     getAllLegalMoves,
     resultsInCheck,
 )
-from graphics import displayCapturedPieces, drawMovesMade
+from graphics import (
+    displayCapturedPieces,
+    displayMovesMade,
+    displayLabels,
+    displaySquareNames,
+)
 from pieces import Pawn, Rook, Knight, Bishop, Queen, King
 from engine import aiMove
 
@@ -20,6 +25,10 @@ def onAppStart(app):
     )
     app.playComputer = False
     app.computerCalculating = False
+    app.computerColor = None
+
+    app.wantsHint = False
+    app.aiHint = None
 
 
 def onMousePress(app, mouseX, mouseY):
@@ -62,87 +71,74 @@ def onKeyPress(app, key):
         app.testBoard.moves = {}
         app.testBoard.moveCount = 0
         app.playComputer = False
-    elif key == "c":
+        app.aiHint = None
+        app.wantsHint = False
+        app.computerColor = None
+    elif key == "w":
         app.playComputer = True
+        app.computerColor = "black"
+    elif key == "b":
+        app.playComputer = True
+        app.computerColor = "white"
+    elif key == "h":
+        app.wantsHint = True
 
 
 def onStep(app):
     if (
         app.playComputer
-        and app.testBoard.turn == "black"
+        and app.testBoard.turn == app.computerColor
         and not app.computerCalculating
     ):
         app.computerCalculating = True
-    elif app.playComputer and app.testBoard.turn == "black" and app.computerCalculating:
-        aiMovePos = aiMove(copyBoard(app.testBoard), "black")
-        fromRow, fromCol, toRow, toCol = aiMovePos
-        app.testBoard.selected = True
-        app.testBoard.cellSelectedCol = app.testBoard.cellFormation[fromRow][
-            fromCol
-        ].color
-        app.testBoard.cellSelectedCoords = (fromRow, fromCol)
-        move(app, toRow, toCol)
-        app.computerCalculating = False
+    elif (
+        app.playComputer
+        and app.testBoard.turn == app.computerColor
+        and app.computerCalculating
+    ):
+        aiMovePos = aiMove(copyBoard(app.testBoard), app.computerColor)
+        if aiMovePos == None:
+            app.testBoard.inCheckmate = True
+            app.computerCalculating = False
+        else:
+            fromRow, fromCol, toRow, toCol = aiMovePos
+            app.testBoard.selected = True
+            app.testBoard.cellSelectedCol = app.testBoard.cellFormation[fromRow][
+                fromCol
+            ].color
+            app.testBoard.cellSelectedCoords = (fromRow, fromCol)
+            move(app, toRow, toCol)
+            app.computerCalculating = False
+
+    if (
+        app.wantsHint
+        and app.testBoard.turn != app.computerColor
+        and not app.computerCalculating
+    ):
+        app.computerCalculating = True
+    elif (
+        app.wantsHint
+        and app.testBoard.turn != app.computerColor
+        and app.computerCalculating
+    ):
+        playerColor = "black" if app.computerColor == "white" else "white"
+        hintPos = aiMove(copyBoard(app.testBoard), playerColor)
+        if hintPos == None:
+            app.testBoard.inCheckmate = True
+            app.computerCalculating = False
+        else:
+            fromRow, fromCol, toRow, toCol = hintPos
+            app.aiHint = f"Try {app.testBoard.pieceFormation[fromRow][fromCol].name} to {app.testBoard.squareNames[toRow][toCol]}"
+            app.computerCalculating = False
 
 
 def redrawAll(app):
     app.testBoard.draw()
     app.testBoard.drawPieces()
-
-    # reset game label
-    resetGameLabelWidthScalar = 4
-    resetGameLabelHeightScalar = 0.95
-    drawLabel(
-        "Press 'r' to reset game",
-        app.width / resetGameLabelWidthScalar,
-        app.height * resetGameLabelHeightScalar,
-        bold=True,
-    )
-
-    # play AI? label
-    playAiLabelWidthScalar = 1.6
-    playAiLabelHeightScalar = 0.95
-    drawLabel(
-        "Press 'c' to play against computer",
-        app.width / playAiLabelWidthScalar,
-        app.height * playAiLabelHeightScalar,
-        bold=True,
-    )
-
-    # playing Ai label
-    if app.playComputer:
-        playingAiLabelWidthScalar = 1.6
-        playingAiLabelHeightScalar = 13
-        drawLabel(
-            "Playing against computer",
-            app.width / playingAiLabelWidthScalar,
-            app.height / playingAiLabelHeightScalar,
-            bold=True,
-        )
-
-    # computer Calculating label
-    if app.computerCalculating:
-        computerCalculatingLabelWidthScalar = 2.2
-        computerCalculatingLabelHeightScalar = 13
-        drawLabel(
-            "Computer Calculating Move...",
-            app.width / computerCalculatingLabelWidthScalar,
-            app.height / computerCalculatingLabelHeightScalar,
-        )
-
-    # checkmate label
-    if app.testBoard.inCheckmate:
-        checkmateLabelWidthScalar = 4
-        checkmateLabelHeightScalar = 13
-        drawLabel(
-            "Checkmate",
-            app.width / checkmateLabelWidthScalar,
-            app.height / checkmateLabelHeightScalar,
-            bold=True,
-        )
-
+    displaySquareNames(app)
+    displayLabels(app)
     displayCapturedPieces(app)
-    drawMovesMade(app)
+    displayMovesMade(app)
 
 
 def move(app, newRow, newCol):
@@ -199,16 +195,14 @@ def move(app, newRow, newCol):
                     app.testBoard.pieceFormation,
                     app.testBoard.lastMove,
                 )
-
                 app.testBoard.inCheckmate = True
                 for move in possibleMoves:
-                    testRow, testCol = move
-
+                    startRow, startCol, testRow, testCol = move
                     inCheck = resultsInCheck(
                         opponentColor,
                         app.testBoard.pieceFormation,
-                        currRow,
-                        currCol,
+                        startRow,
+                        startCol,
                         testRow,
                         testCol,
                     )

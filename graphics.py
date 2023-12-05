@@ -53,7 +53,28 @@ def displayCapturedPieces(app):
         blackCapturedPiecesLabelHeightCounter += 0.02
 
 
-def drawMovesMade(app):
+def displaySquareNames(app):
+    numWidthScalar = 6.3
+    numHeightCounter = 0.16
+    for num in range(1, 9):
+        drawLabel(
+            num, app.width / numWidthScalar, app.height * numHeightCounter, bold=True
+        )
+        numHeightCounter += 0.1
+
+    letterWidthCounter = 0.21
+    letterHeightScalar = 0.94
+    for letter in range(65, 73):
+        drawLabel(
+            chr(letter),
+            app.width * letterWidthCounter,
+            app.height * letterHeightScalar,
+            bold=True,
+        )
+        letterWidthCounter += 0.065
+
+
+def displayMovesMade(app):
     movesMadeRectXCoordScalar = 0.75
     movesMadeRectYCoordScalar = 0.1
     movesMadeRectWidthScalar = 5
@@ -116,3 +137,90 @@ def drawMovesMade(app):
         # )
         # movesMadeLabelHeightCounter += 0.02
         moveDisplayed += 1
+
+
+def displayLabels(app):
+    # reset game label
+    resetGameLabelWidthScalar = 4
+    resetGameLabelHeightScalar = 0.97
+    drawLabel(
+        "Press 'r' to reset game",
+        app.width / resetGameLabelWidthScalar,
+        app.height * resetGameLabelHeightScalar,
+        bold=True,
+    )
+
+    # play AI? label
+    playAiLabelWidthScalar = 1.6
+    playAiAsWhiteLabelHeightScalar = 0.96
+    drawLabel(
+        "Press 'w' to play white against computer",
+        app.width / playAiLabelWidthScalar,
+        app.height * playAiAsWhiteLabelHeightScalar,
+        bold=True,
+    )
+    playAiAsBlackLabelHeightScalar = 0.98
+    drawLabel(
+        "Press 'b' to play black against computer",
+        app.width / playAiLabelWidthScalar,
+        app.height * playAiAsBlackLabelHeightScalar,
+        bold=True,
+    )
+
+    # playing Ai label
+    if app.playComputer:
+        playingAiLabelWidthScalar = 1.6
+        playingAiLabelHeightScalar = 13
+        drawLabel(
+            "Playing against computer",
+            app.width / playingAiLabelWidthScalar,
+            app.height / playingAiLabelHeightScalar,
+            bold=True,
+        )
+
+    # computer Calculating label
+    if app.computerCalculating:
+        computerCalculatingLabelWidthScalar = 2.2
+        computerCalculatingLabelHeightScalar = 13
+        drawLabel(
+            "Computer Calculating Move...",
+            app.width / computerCalculatingLabelWidthScalar,
+            app.height / computerCalculatingLabelHeightScalar,
+        )
+
+    # checkmate label
+    if app.testBoard.inCheckmate:
+        checkmateLabelWidthScalar = 4
+        checkmateLabelHeightScalar = 13
+        drawLabel(
+            "Checkmate",
+            app.width / checkmateLabelWidthScalar,
+            app.height / checkmateLabelHeightScalar,
+            bold=True,
+        )
+
+    # hint? label
+    wantHintLabelWidthScalar = 2.4
+    wantHintLabelHeightScalar = 0.96
+    drawLabel(
+        "Press 'h' for hint",
+        app.width / wantHintLabelWidthScalar,
+        app.height * wantHintLabelHeightScalar,
+        bold=True,
+    )
+    onlyOnTurnHeightScalar = wantHintLabelHeightScalar + 0.02
+    drawLabel(
+        "(only on your turn)",
+        app.width / wantHintLabelWidthScalar,
+        app.height * onlyOnTurnHeightScalar,
+    )
+
+    # display hint label
+    displayHintWidthScalar = 2.3
+    displayHintHeightScalar = 18
+    if app.wantsHint and app.aiHint != None:
+        drawLabel(
+            app.aiHint,
+            app.width / displayHintWidthScalar,
+            app.height / displayHintHeightScalar,
+        )

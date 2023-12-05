@@ -62,29 +62,32 @@ def isKingInCheck(kingColor, pieceFormation, lastMove):
                 kingPos = (i, j)
                 break
     opponentColor = "black" if kingColor == "white" else "white"
-    return kingPos in getAllLegalMoves(opponentColor, pieceFormation, lastMove)
+    return kingPos in getAllPotentialMoves(opponentColor, pieceFormation, lastMove)
 
 
 def getAllLegalMoves(playerColor, pieceFormation, lastMove):
     legalMoves = []
     for i in range(len(pieceFormation)):
         for j in range(len(pieceFormation[i])):
-            if (pieceFormation[i][j] != None) and (
-                pieceFormation[i][j].color == playerColor
-            ):
+            piece = pieceFormation[i][j]
+            if piece != None and piece.color == playerColor:
                 for x in range(8):
                     for y in range(8):
-                        if isinstance(pieceFormation[i][j], Pawn):
-                            if pieceFormation[i][j].isLegalMove(
-                                i, j, x, y, pieceFormation, lastMove
-                            ):
-                                legalMoves.append((x, y))
-                        else:
-                            if pieceFormation[i][j].isLegalMove(
-                                i, j, x, y, pieceFormation
-                            ):
-                                legalMoves.append((x, y))
+                        legalMove = (
+                            piece.isLegalMove(i, j, x, y, pieceFormation, lastMove)
+                            if isinstance(piece, Pawn)
+                            else piece.isLegalMove(i, j, x, y, pieceFormation)
+                        )
+                        if legalMove:
+                            originalPiece = pieceFormation[x][y]
+                            pieceFormation[x][y] = piece
+                            pieceFormation[i][j] = None
 
+                            if not isKingInCheck(playerColor, pieceFormation, lastMove):
+                                legalMoves.append((i, j, x, y))
+
+                            pieceFormation[i][j] = piece
+                            pieceFormation[x][y] = originalPiece
     return legalMoves
 
 
@@ -101,3 +104,20 @@ def resultsInCheck(kingColor, pieceFormation, currRow, currCol, newRow, newCol):
     pieceFormation[newRow][newCol] = capturedPiece
 
     return inCheck
+
+
+def getAllPotentialMoves(playerColor, pieceFormation, lastMove):
+    potentialMoves = []
+    for i in range(len(pieceFormation)):
+        for j in range(len(pieceFormation[i])):
+            piece = pieceFormation[i][j]
+            if piece is not None and piece.color == playerColor:
+                for x in range(8):
+                    for y in range(8):
+                        if isinstance(piece, Pawn):
+                            if piece.isLegalMove(i, j, x, y, pieceFormation, lastMove):
+                                potentialMoves.append((x, y))
+                        else:
+                            if piece.isLegalMove(i, j, x, y, pieceFormation):
+                                potentialMoves.append((x, y))
+    return potentialMoves

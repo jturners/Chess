@@ -4,33 +4,30 @@ from utilities import getAllLegalMoves
 
 
 def aiMove(board, aiColor):
-    print(f"aiMove called with color: {aiColor}")
     maximizingPlayer = True
     depth = 4
     alpha = -float("inf")
     beta = float("inf")
     aiMove = miniMax(board, aiColor, maximizingPlayer, depth, alpha, beta)[0]
-    print(f"aiMove returning: {aiMove}")
     return aiMove
 
 
 def miniMax(board, maximizingColor, maximizingPlayer, depth, alpha, beta):
-    print(
-        f"miniMax called: color={maximizingColor}, player={maximizingPlayer}, depth={depth}"
-    )
     if depth == 0 or board.inCheckmate:
         evalScore = evaluatePosition(board, maximizingColor)
-        print(f"Base case reached: eval_score = {evalScore}")
         return None, evalScore
-    moves = getAllLegalMovesFromPos(
-        maximizingColor, board.pieceFormation, board.lastMove
-    )
+    moves = getAllLegalMoves(maximizingColor, board.pieceFormation, board.lastMove)
+    if moves == []:
+        evalScore = -float("inf") if maximizingPlayer else float("inf")
+        return None, evalScore
     bestMove = moves[0]
 
     if maximizingPlayer:
         maxEval = -float("inf")
         for move in moves:
             originalRow, originalCol, testRow, testCol = move
+            pieceAtOriginal = board.pieceFormation[originalRow][originalCol]
+            pieceAtTest = board.pieceFormation[testRow][testCol]
             board.pieceFormation[testRow][testCol] = board.pieceFormation[originalRow][
                 originalCol
             ]
@@ -38,10 +35,8 @@ def miniMax(board, maximizingColor, maximizingPlayer, depth, alpha, beta):
 
             currEval = miniMax(board, maximizingColor, False, depth - 1, alpha, beta)[1]
 
-            board.pieceFormation[originalRow][originalCol] = board.pieceFormation[
-                testRow
-            ][testCol]
-            board.pieceFormation[testRow][testCol] = None
+            board.pieceFormation[originalRow][originalCol] = pieceAtTest
+            board.pieceFormation[testRow][testCol] = pieceAtOriginal
 
             if currEval > maxEval:
                 maxEval = currEval
@@ -49,13 +44,14 @@ def miniMax(board, maximizingColor, maximizingPlayer, depth, alpha, beta):
             alpha = max(alpha, currEval)
             if beta <= alpha:
                 break
-        print(f"MaximizingPlayer, bestMove = {bestMove}, maxEval = {maxEval}")
         return bestMove, maxEval
 
     else:
         minEval = float("inf")
         for move in moves:
             originalRow, originalCol, testRow, testCol = move
+            pieceAtOriginal = board.pieceFormation[originalRow][originalCol]
+            pieceAtTest = board.pieceFormation[testRow][testCol]
             board.pieceFormation[testRow][testCol] = board.pieceFormation[originalRow][
                 originalCol
             ]
@@ -63,10 +59,8 @@ def miniMax(board, maximizingColor, maximizingPlayer, depth, alpha, beta):
 
             currEval = miniMax(board, maximizingColor, True, depth - 1, alpha, beta)[1]
 
-            board.pieceFormation[originalRow][originalCol] = board.pieceFormation[
-                testRow
-            ][testCol]
-            board.pieceFormation[testRow][testCol] = None
+            board.pieceFormation[originalRow][originalCol] = pieceAtTest
+            board.pieceFormation[testRow][testCol] = pieceAtOriginal
 
             if currEval < minEval:
                 minEval = currEval
@@ -74,7 +68,6 @@ def miniMax(board, maximizingColor, maximizingPlayer, depth, alpha, beta):
             beta = max(beta, currEval)
             if beta <= alpha:
                 break
-        print(f"MinimizingPlayer, bestMove = {bestMove}, minEval = {minEval}")
         return bestMove, minEval
 
 
@@ -85,44 +78,61 @@ def evaluatePosition(board, maximizingColor):
         pieceScore = board.blackScore - board.whiteScore
 
     opponentColor = "black" if maximizingColor == "white" else "white"
+    myMoves = getAllLegalMoves(maximizingColor, board.pieceFormation, board.lastMove)
     opponentMoves = getAllLegalMoves(
         opponentColor, board.pieceFormation, board.lastMove
     )
 
-    positionScore = 0
-    threatScore = 0
-    mobilityScore = 0
-    centerControlScore = 0
-    kingSafetyScore = 0
+    if opponentMoves == []:
+        return -float("inf")
+
+    positionScore, threatScore, centerControlScore, kingSafetyScore, capturingScore = (
+        0,
+        0,
+        0,
+        0,
+        0,
+    )
+
+    for move in myMoves:
+        _, _, toRow, toCol = move
+        if (
+            board.pieceFormation[toRow][toCol] != None
+            and board.pieceFormation[toRow][toCol].color == opponentColor
+        ):
+            capturingScore += board.pieceFormation[toRow][toCol].weight
 
     for row in range(8):
         for col in range(8):
             piece = board.pieceFormation[row][col]
-            if piece != None:
-                if piece.color == maximizingColor:
-                    if isinstance(piece, Pawn):
-                        positionScore += pawnPositionScore(row, piece.color)
-                    elif isinstance(piece, Knight):
-                        positionScore += knightPositionScore(row, col)
-                    # mobilityScore += len(
-                    #     getAllLegalMoves(
-                    #         maximizingColor, board.pieceFormation, board.lastMove
-                    #     )
-                    # )
-                    if (row, col) in [(3, 3), (3, 4), (4, 3), (4, 4)]:
-                        centerControlScore += 0.5
-                    if isinstance(piece, King) and (col <= 2 or col >= 5):
-                        kingSafetyScore += 1
-                if (row, col) in opponentMoves:
-                    threatScore += piece.weight * 0.5
+            if piece != None and piece.color == maximizingColor:
+                if isinstance(piece, Pawn):
+                    positionScore += pawnPositionScore(row, piece.color)
+                elif isinstance(piece, Knight):
+                    positionScore += knightPositionScore(row, col)
+                if (row, col) in [(3, 3), (3, 4), (4, 3), (4, 4)]:
+                    centerControlScore += 0.5
+                if isinstance(piece, King) and (col <= 2 or col >= 5):
+                    kingSafetyScore += 1
+            if (
+                piece != None
+                and piece.color != maximizingColor
+                and (row, col) in opponentMoves
+            ):
+                threatScore += piece.weight * 0.5
+
+    checkmateScore = 0
+    if board.inCheckmate:
+        checkmateScore = 1000 if board.turn != maximizingColor else -1000
 
     totalScore = (
         pieceScore
         + positionScore
         - threatScore
-        + mobilityScore
         + centerControlScore
         + kingSafetyScore
+        + checkmateScore
+        + capturingScore
     )
     return totalScore
 
@@ -152,26 +162,3 @@ def knightPositionScore(row, col):
         return 1.5
     else:
         return 0
-
-
-def getAllLegalMovesFromPos(playerColor, pieceFormation, lastMove):
-    legalMoves = []
-    for i in range(len(pieceFormation)):
-        for j in range(len(pieceFormation[i])):
-            if (pieceFormation[i][j] != None) and (
-                pieceFormation[i][j].color == playerColor
-            ):
-                for x in range(8):
-                    for y in range(8):
-                        if isinstance(pieceFormation[i][j], Pawn):
-                            if pieceFormation[i][j].isLegalMove(
-                                i, j, x, y, pieceFormation, lastMove
-                            ):
-                                legalMoves.append((i, j, x, y))
-                        else:
-                            if pieceFormation[i][j].isLegalMove(
-                                i, j, x, y, pieceFormation
-                            ):
-                                legalMoves.append((i, j, x, y))
-
-    return legalMoves
