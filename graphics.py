@@ -5,12 +5,13 @@ def displayCapturedPieces(app):
     capturedPiecesRectYCoordScalar = 0.1
     capturedPiecesRectWidthScalar = 7
     capturedPiecesRectHeightScalar = 0.85
+    cerulian = rgb(67, 127, 151)
     drawRect(
         0,
         app.height * capturedPiecesRectYCoordScalar,
         app.width / capturedPiecesRectWidthScalar,
         app.height * capturedPiecesRectHeightScalar,
-        fill="gray",
+        fill=cerulian,
     )
 
     capturedPiecesLabelWidthScalar = 15
@@ -32,7 +33,7 @@ def displayCapturedPieces(app):
         bold=True,
     )
 
-    whiteCapturedPiecesLabelHeightCounter = 0.15
+    whiteCapturedPiecesLabelHeightCounter = 0.14
     for piece in app.testBoard.whiteCaptured:
         drawLabel(
             piece,
@@ -56,7 +57,7 @@ def displayCapturedPieces(app):
 def displaySquareNames(app):
     numWidthScalar = 6.3
     numHeightCounter = 0.16
-    for num in range(1, 9):
+    for num in range(8, 0, -1):
         drawLabel(
             num, app.width / numWidthScalar, app.height * numHeightCounter, bold=True
         )
@@ -79,13 +80,14 @@ def displayMovesMade(app):
     movesMadeRectYCoordScalar = 0.1
     movesMadeRectWidthScalar = 5
     movesMadeRectHeightScalar = 0.85
+    cerulian = rgb(67, 127, 151)
 
     drawRect(
         app.width * movesMadeRectXCoordScalar,
         app.height * movesMadeRectYCoordScalar,
         app.width / movesMadeRectWidthScalar,
         app.height * movesMadeRectHeightScalar,
-        fill="gray",
+        fill=cerulian,
     )
 
     movesMadeLabelWidthScalar = 0.85
@@ -110,7 +112,7 @@ def displayMovesMade(app):
                 app.height * movesMadeRectYCoordScalar,
                 app.width / movesMadeRectWidthScalar,
                 app.height * movesMadeRectHeightScalar,
-                fill="gray",
+                fill=cerulian,
             )
             drawLabel(
                 "Moves Made:",
@@ -129,13 +131,6 @@ def displayMovesMade(app):
             fill="white",
         )
         movesMadeLabelHeightCounter += 0.02
-        # drawLabel(
-        #     app.testBoard.moves[move],
-        #     app.width * movesMadeLabelWidthScalar,
-        #     app.height * movesMadeLabelHeightCounter,
-        #     fill="white",
-        # )
-        # movesMadeLabelHeightCounter += 0.02
         moveDisplayed += 1
 
 

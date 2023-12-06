@@ -130,6 +130,8 @@ def onStep(app):
             fromRow, fromCol, toRow, toCol = hintPos
             app.aiHint = f"Try {app.testBoard.pieceFormation[fromRow][fromCol].name} to {app.testBoard.squareNames[toRow][toCol]}"
             app.computerCalculating = False
+    if app.testBoard.inCheckmate:
+        app.computerCalculating = False
 
 
 def redrawAll(app):

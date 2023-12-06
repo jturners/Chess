@@ -5,7 +5,7 @@ from utilities import getAllLegalMoves
 
 def aiMove(board, aiColor):
     maximizingPlayer = True
-    depth = 4
+    depth = 3
     alpha = -float("inf")
     beta = float("inf")
     aiMove = miniMax(board, aiColor, maximizingPlayer, depth, alpha, beta)[0]
@@ -100,30 +100,36 @@ def evaluatePosition(board, maximizingColor):
             board.pieceFormation[toRow][toCol] != None
             and board.pieceFormation[toRow][toCol].color == opponentColor
         ):
-            capturingScore += board.pieceFormation[toRow][toCol].weight
+            capturingScore += board.pieceFormation[toRow][toCol].weight * 2
 
     for row in range(8):
         for col in range(8):
             piece = board.pieceFormation[row][col]
             if piece != None and piece.color == maximizingColor:
                 if isinstance(piece, Pawn):
+                    if board.moveCount < 7:
+                        positionScore += 10
                     positionScore += pawnPositionScore(row, piece.color)
                 elif isinstance(piece, Knight):
+                    if board.moveCount < 7:
+                        positionScore += 10
                     positionScore += knightPositionScore(row, col)
                 if (row, col) in [(3, 3), (3, 4), (4, 3), (4, 4)]:
-                    centerControlScore += 0.5
-                if isinstance(piece, King) and (col <= 2 or col >= 5):
+                    centerControlScore += 50
+                if isinstance(piece, King) and (col == 2 or col == 6):
                     kingSafetyScore += 1
+                if isinstance(piece, Rook) and board.moveCount < 20:
+                    positionScore -= 1000
             if (
                 piece != None
                 and piece.color != maximizingColor
                 and (row, col) in opponentMoves
             ):
-                threatScore += piece.weight * 0.5
+                threatScore += piece.weight * 2.5
 
     checkmateScore = 0
     if board.inCheckmate:
-        checkmateScore = 1000 if board.turn != maximizingColor else -1000
+        checkmateScore = 10000 if board.turn != maximizingColor else -10000
 
     totalScore = (
         pieceScore

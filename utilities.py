@@ -1,10 +1,13 @@
 from pieces import Pawn, Rook, Knight, Bishop, Queen, King
 from cell import Cell
+from cmu_graphics import *
 
 
 def getOpeningCellFormat(x, y, size):
     grid = []
-    startColor = "white"
+    whiteColor = rgb(244, 238, 226)
+    blackColor = rgb(35, 128, 49)
+    startColor = whiteColor
     xCoord = x
     yCoord = y
     for row in range(8):
@@ -12,9 +15,9 @@ def getOpeningCellFormat(x, y, size):
         currColor = startColor
         for _ in range(8):
             grid[row].append(Cell(currColor, xCoord, yCoord, size))
-            currColor = "black" if currColor == "white" else "white"
+            currColor = blackColor if currColor == whiteColor else whiteColor
             xCoord += size
-        startColor = "black" if startColor == "white" else "white"
+        startColor = blackColor if startColor == whiteColor else whiteColor
         xCoord = x
         yCoord += size
     return grid
